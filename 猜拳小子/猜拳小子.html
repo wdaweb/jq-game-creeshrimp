@@ -31,6 +31,10 @@
             align-items: center;
         }
 
+        .text-center {
+            text-align: center;
+        }
+
         .mt-1 {
             margin-top: 1rem;
         }
@@ -45,6 +49,14 @@
 
         .mb-2 {
             margin-bottom: 2rem;
+        }
+
+        .ml-auto {
+            margin-left: auto;
+        }
+
+        .mr-auto {
+            margin-right: auto;
         }
 
         body {
@@ -118,7 +130,7 @@
 
                 cursor: pointer;
 
-                opacity: 0.5;
+                opacity: 0.6;
 
                 &:hover {
                     opacity: 1;
@@ -130,11 +142,14 @@
             }
         }
 
-        #enemy.jankenBtns {
-            button {
-                rotate: 180deg;
-                opacity: 1;
-            }
+        #displayEnemyMove {
+            background: rgb(255, 255, 255);
+            width: 10rem;
+            line-height: 10rem;
+            font-size: 5rem;
+            rotate: 180deg;
+            opacity: 1;
+
         }
 
         #progress-bar {
@@ -162,6 +177,12 @@
                 translate: -50%;
             }
         }
+
+        #startBtn {
+            padding: 2rem;
+            background: white;
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -170,14 +191,20 @@
         <div class="flex align-center mb-2">
             <img id="jankenboy" src="jankenboy.png" alt="">
             <h2>你能打敗我內心的力量嗎</h2>
+
+            <button id="startBtn" class="ml-auto">開始</button>
         </div>
-        <div id="enemy" class="jankenBtns">
-            <button>✊</button>
+
+        <!-- 敵人的出拳 -->
+        <div class="flex justify-center">
+            <div id="displayEnemyMove" class="text-center">✊</div>
         </div>
         <div id="progress-bar">
             <div class="bar"></div>
         </div>
-        <div id="me" class="jankenBtns">
+
+        <!-- 我方的出拳 -->
+        <div id="mymoves" class="jankenBtns">
             <button>✊</button>
             <button>🖐</button>
             <button>✌</button>
@@ -194,8 +221,101 @@
         crossorigin='anonymous'></script>
     <script>
 
+        // 設定
+
+        // 敵人物件
+        const enemy = {
+            moves: ['✊', '🖐', '✌'],
+            currentMove: 0,
+
+
+            // 更新出拳畫面
+            updateDisplay() {
+                $('#displayEnemyMove').text(this.moves[this.currentMove])
+            },
+            // step1
+            step1() {
+                // move + 1 取餘數循環
+                this.currentMove = (this.currentMove + 1) % this.moves.length
+                // 更新畫面
+                this.updateDisplay()
+            },
+
+            reset() {
+                // 給一個隨機初值
+                this.currentMove = randomInt(this.moves.length)
+                // 更新畫面
+                this.updateDisplay()
+            }
+        }
+
+        const progressBar = {
+            currentProgress: 0,
+            maxProgress: 100,
+            render() {
+                if (this.currentProgress > this.maxProgress) return
+                const percent = Math.floor((this.currentProgress / this.maxProgress) * 100)
+                $('#progress-bar .bar').css('translate', `${-100 + percent}%`)
+            },
+            reset() {
+                this.currentProgress = 0
+                this.render()
+            },
+            setProgress(value) {
+                this.currentProgress = value
+                this.render()
+            }
+
+        }
+
+        // 點開始遊戲，開始輪換敵方出拳
+        $('#startBtn').click(() => {
+            enemy.reset()
+            // 每0.5秒輪換，並更新畫面
+            setInterval(() => {
+                enemy.step1()
+            }, 1000)
+        })
+
+        // 點出拳
+        $('#mymoves button').on('mousedown', (e) => {
+            // 設定我方出拳
+            const myAnswer = e.target.innerText
+            const enemyAnswer = enemy.moves[enemy.currentMove]
+
+            // 判斷輸贏
+            const result = janken(myAnswer, enemyAnswer)
+
+            console.log(result)
+        })
+
+
         /**
-         * 隨機整數
+         * 得到電腦出的拳並判斷輸贏
+        */
+        function janken(yourAnswer, enemyAnswer) {
+            const jankenArr = ['🖐', '✊', '✌']
+
+            const cpuAnswerIndex = jankenArr.indexOf(enemyAnswer)
+            const yourAnswerIndex = jankenArr.indexOf(yourAnswer)
+
+
+            // 判斷輸贏
+            let resultText = ''
+            // 平手
+            if (yourAnswerIndex === cpuAnswerIndex) resultText = 'DRAW'
+            // 玩家贏
+            else if ((yourAnswerIndex + 1) % 3 === cpuAnswerIndex) resultText = 'WIN'
+            // 剩下都是輸
+            else resultText = 'LOSE'
+
+            // 回傳 [電腦答案, 輸贏結果]
+            return resultText
+        }
+
+        /**
+         * @param {number} max 最大值
+         * @returns {number} 隨機 0~(max-1) 之間的整數
         */
         function randomInt(max) {
             return Math.floor(Math.random() * max)
